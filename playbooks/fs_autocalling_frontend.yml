@@ -2,19 +2,17 @@
 - name: Freeswitch-Autocalling-Frontend
   hosts: fs_omnitell_ru
   vars:
-    service_port: {
-      prod: 3010,
-      dev: 3011
-    }
     pm2_service_names: {
       prod: 'Autocalling-Frontend',
       dev: 'Autocalling-Frontend-dev'
     }
     local_repo: '/home/iv/Documents/mydir/work/freeswitch'
     local_path: '/home/iv/Documents/mydir/vuejs/autocalling-frontend'
+    local_path_backend_mockery: '/home/iv/Documents/mydir/vuejs/fullstack-vue/simple-backend'
     dest_path: {
       prod: '/opt/autocalling-frontend/prod',
-      dev: '/opt/autocalling-frontend/dev'
+      dev: '/opt/autocalling-frontend/dev',
+      backend_mockery: '/opt/mocks/for-acall-front'
     }
   become: true
   tasks:
@@ -65,6 +63,17 @@
           dest: "{{ dest_path.dev }}"
         }
 
+    - name: Sync backend mock
+      copy: "{{ item }}"
+      dest: "{{ dest_path.backend_mockery }}"
+      with_items:
+      - "{{ local_path_backend_mockery }}/index.js"
+      - "{{ local_path_backend_mockery }}/package.json"
+      - "{{ local_path_backend_mockery }}/tsconfig.json"
+      - "{{ local_path_backend_mockery }}/ecosystem.config.js"
+
+
+
     # - name: Turn on proper node vers
     #   shell: |
     #     source ~/.bashrc
@@ -87,6 +96,14 @@
         executable: /bin/bash
         chdir: "{{ dest_path.dev }}"
 
+    - name: Refresh packages for backend-mockery
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        npm install
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path.backend_mockery }}"
     # - name: Whoami
     #   shell: |
     #     source ~/.bashrc
@@ -129,15 +146,17 @@
    
 
     - name: Create pm2 daemon
-      shell: pm2 start ecosystem.dev.config.js
+      shell: |
+        pm2 start ecosystem.dev.config.js --ns dev
+        pm2 stop "{{ pm2_service_names.dev }}"
       args:
         executable: /bin/bash
         chdir: "{{ dest_path.dev }}"
       when: daemon_existence.stderr != ''
 
-    - name: Restart pm2 daemon
-      shell: pm2 restart {{ pm2_service_names.dev }}
-      when: daemon_existence.stderr == ''
+    # - name: Restart pm2 daemon
+    #   shell: pm2 restart {{ pm2_service_names.dev }}
+    #   when: daemon_existence.stderr == ''
 
       
 
