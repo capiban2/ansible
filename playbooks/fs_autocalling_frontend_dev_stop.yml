@@ -1,0 +1,30 @@
+---
+- name: Freeswitch-Autocalling-Frontend-Starter
+  hosts: fs_omnitell_ru
+  vars:
+    pm2_service_names: {
+      prod: 'Autocalling-Frontend',
+      dev: 'Autocalling-Frontend-dev'
+    }
+    local_repo: '/home/iv/Documents/mydir/work/freeswitch'
+    local_path: '/home/iv/Documents/mydir/vuejs/autocalling-frontend'
+    local_path_backend_mockery: '/home/iv/Documents/mydir/vuejs/fullstack-vue/simple-backend'
+    dest_path: {
+      prod: '/opt/autocalling-frontend/prod',
+      dev: '/opt/autocalling-frontend/dev',
+      backend_mockery: '/opt/mocks/mock-for-acall-front'
+    }
+  become: true
+  tasks:
+
+    - name: Stop daemons
+      shell: |
+        pm2 stop dev
+      args:
+        executable: /bin/bash
+
+
+
+
+
+
