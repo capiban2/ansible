@@ -1,0 +1,96 @@
+---
+- name: Freeswitch-Autocalling-Frontend
+  hosts: fs_omnitell_ru
+  vars:
+    service_port: {
+      prod: 3010,
+      dev: 3011
+    }
+    pm2_service_names: {
+      prod: 'Autocalling-Frontend',
+      dev: 'Autocalling-Frontend-dev'
+    }
+    local_repo: '/home/iv/Documents/mydir/work/freeswitch'
+    local_path: '/home/iv/Documents/mydir/vuejs/autocalling-frontend'
+    dest_path: {
+      prod: '/opt/autocalling-frontend/prod',
+      dev: '/opt/autocalling-frontend/dev'
+    }
+  become: true
+  tasks:
+
+    - name: Canary copy
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: iv
+        group: iv
+      with_items:
+      - {
+          src: "{{ vars.local_path }}/package.json",
+          dest: "{{ dest_path.prod }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/public",
+          dest: "{{ dest_path.prod }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/src",
+          dest: "{{ dest_path.prod }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/ecosystem.prod.config.js",
+          dest: "{{ dest_path.prod }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/vue.config.js",
+          dest: "{{ dest_path.prod }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/babel.config.js",
+          dest: "{{ dest_path.prod }}"
+        }
+
+    - name: Refresh packages for prod
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        npm install
+        npm install serve
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path.prod }}"
+
+    - name: Build prj
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        export AUTOCALLING_STAGE="prod"
+        npm run build
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path.prod }}"
+ 
+    - name: Check daemon existance
+      shell: pm2 info {{ pm2_service_names.prod }} | grep w | wc -w
+      register: daemon_existence
+
+
+    - name: Create pm2 daemon
+      shell: pm2 start ecosystem.prod.config.js
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path.prod }}"
+      when: daemon_existence.stderr != ''
+
+    - name: Restart pm2 daemon
+      shell: pm2 restart {{ pm2_service_names.prod }}
+      when: daemon_existence.stderr == ''
+
+
+
+
+
+
+
+

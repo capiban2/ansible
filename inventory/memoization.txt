@@ -1,0 +1,2 @@
+- For creating directory
+ansible omnitell -l fs_omnitell_ru -i ./omnitell.yml -m file -b -a "dest=/opt/autocalling-frontend/dev state=directory"

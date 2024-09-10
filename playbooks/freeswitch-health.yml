@@ -1,0 +1,81 @@
+---
+- name: Freeswitch-Healthness
+  hosts: fs_omnitell_ru
+  vars:
+    services_names:
+      - SMS-Handler
+      - DB-Service-Nest
+    services_ports:
+      - 3005
+      - 3009
+
+  become: true
+  tasks:
+    - name: Check services statuses in pm2
+      # become_user: root
+      shell: pm2 info {{ item }} | grep offline | wc -l
+      register: services_online
+      # with_items:
+      # - SMS-Handler
+      # - DB-Service-Nest
+      loop: "{{ vars.services_names }}"
+    - name: Print response
+      ansible.builtin.debug:
+        # var: (sms_handler_liveprobe.stdout |from_json).health
+        msg: "Service {{ item.1 }} offline : {{ item.0.stdout }}"
+      with_together:
+        - "{{ services_online.results }}"
+        - "{{ vars.services_names }}"
+
+    - name: Start dead services
+      shell: pm2 start "{{ item.1 }}"
+      with_together:
+        - "{{ services_online.results }}"
+        - "{{ vars.services_names }}"
+      when: item.0.stdout == 1
+
+    - name: Liveprobe services
+      shell: curl -s -k "http://localhost:{{ item }}/liveprobe"
+      register: liveprobes
+      with_items:
+        - "{{ vars.services_ports }}"
+
+    - name: Print live services
+      ansible.builtin.debug:
+        msg: "Liveprobe of {{ item.1 }} service : {{ (item.0.stdout|from_json).health }}"
+      with_together:
+        - "{{ liveprobes.results }}"
+        - "{{ vars.services_names }}"
+      when: (item.0.stdout|from_json).statusCode == 200
+      ignore_errors: true
+
+    - name: Print dead-inside services
+      ansible.builtin.debug:
+        msg: "{{ item.1 }} service is dead-inside : {{ item.0.stdout|from_json }}"
+      with_together:
+        - "{{ liveprobes.results }}"
+        - "{{ vars.services_names }}"
+      when: (item.0.stdout|from_json).statusCode != 200
+      ignore_errors: true
+
+      # when: "{{ item.0 }}" == 1
+
+    # - name: Check sms-handler service's status in pm2 and start if necessary
+    #   # become_user: root
+    #   shell: pm2 info SMS-Handler | grep offline | wc -l
+    #   register: novofon_online
+    #
+    # - name: Start sms-handler service
+    #
+    #   shell: pm2 start SMS-Handler
+    #   when: novofon_online.stdout == 0
+    #
+    # - name: Liveprobe sms-handler service
+    #   shell: curl -k http://localhost:3005/liveprobe
+    #   register: sms_handler_liveprobe
+    #
+    # - name: Print sms-handler liveprobe
+    #   debug:
+    #     # var: (sms_handler_liveprobe.stdout |from_json).health
+    #     msg:
+    #       - "Sms-handler liveprobe : {{ (sms_handler_liveprobe.stdout|from_json).health }}"

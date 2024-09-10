@@ -1,0 +1,109 @@
+---
+- name: Freeswitch-Autocalling-Backend
+  hosts: fs_omnitell_ru
+  vars:
+    pm2_service_names: 'Autocalling-MRG'
+    local_repo: '/home/iv/Documents/mydir/work/freeswitch'
+    dest_path: '/opt/autocalling-mrg/server-side'
+    local_path: '/home/iv/Documents/mydir/work/freeswitch/opt/autocalling-mrg/server-side'
+
+  become: true
+  tasks:
+    # - name: Mark copyable files
+    #   find:
+    #     paths: "{{ local_path }}"
+    #     hidden: true
+    #     recurse: true
+    #     excludes: "node_modules,dist"
+    #   delegate_to: localhost
+    #   register: copyable_files
+    #   remote_user: root
+
+
+    - name: Sync files
+      # ansible.builtin.debug:
+      #   msg: "{{ item.path }}"
+      #
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        # owner: iv
+        # group: iv
+      with_items:
+# "{{ copyable_files.files }}"
+      - {
+          src: "{{ vars.local_path }}/package.json",
+          dest: "{{ vars.dest_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/src",
+          dest: "{{ dest_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/ecosystem.config.js",
+          dest: "{{ dest_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/tsconfig.json",
+          dest: "{{ dest_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/tsconfig.build.json",
+          dest: "{{ dest_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/test",
+          dest: "{{ dest_path }}"
+        }
+
+    - name: Refresh packages for dev
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        npm install
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path }}"
+
+    - name: Build prj
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        npm run build
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path }}"
+    #
+    #  - name: Start-test
+    #   shell: serve -s build -l {{ service_port.dev }}
+    #   args:
+    #     executable: /bin/bash
+    #     chdir: "{{ dest_path.dev }}"
+    # - name: Check daemon existance
+    #   shell: pm2 info {{ pm2_service_names }} | grep w | wc -w
+    #   register: daemon_existence
+
+    # - name: Print response
+    #   ansible.builtin.debug:
+    #     # var: (sms_handler_liveprobe.stdout |from_json).health
+    #     msg: "{{ daemon_existence }}"
+    #   when: daemon_existence.stderr == ''
+   
+
+    # - name: Create pm2 daemon
+    #   shell: pm2 start ecosystem.dev.config.js
+    #   args:
+    #     executable: /bin/bash
+    #     chdir: "{{ dest_path.dev }}"
+    #   when: daemon_existence.stderr != ''
+
+    - name: Restart pm2 daemon
+      shell: pm2 restart {{ pm2_service_names }}
+      # when: daemon_existence.stderr == ''
+
+
+
+
+
+
+

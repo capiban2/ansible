@@ -1,0 +1,5 @@
+- name: CopyFiles
+  hosts: fs_omnitell_ru
+  tasks:
+    - name: Copy files
+      copy: "src=/home/iv/Documents/mydir/tgbots/fstbot/ dest=/home/iv/fstbot"

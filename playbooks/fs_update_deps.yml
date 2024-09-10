@@ -1,0 +1,48 @@
+
+---
+- name: Freeswitch-Autocalling-Frontend
+  hosts: fs_omnitell_ru
+  vars:
+    pm2_service_names: 
+    # - 'Autocalling-Frontend'
+    # - 'Autocalling-Frontend-dev'
+    - Autocalling-MRG
+
+    remote_paths:
+    - '/opt/autocalling-mrg/server-side'
+    # - '/opt/autocalling-frontend/prod'
+    # - '/opt/autocalling-frontend/dev'
+    
+    local_repo: '/home/iv/Documents/mydir/work/freeswitch'
+    local_path: '/home/iv/Documents/mydir/vuejs/autocalling-frontend'
+    dest_path: {
+      prod: '/opt/autocalling-frontend/prod',
+      dev: '/opt/autocalling-frontend/dev'
+    }
+  become: true
+  tasks:
+    - name: Install 22 node
+      shell: |
+        source ~/.bashrc
+        nvm install 22
+      args:
+        executable: /bin/bash
+    - name: Update deps for services
+      shell: |
+        source ~/.bashrc
+        nvm use 22
+        npm install npm-check-updates
+        npx npm-check-updates
+        ncu -u
+        npm install
+      args:
+        executable: /bin/bash
+        chdir: '{{ item }}'
+      with_items: '{{ remote_paths }}'
+
+    # - name: Restart daemons
+    #   shell: pm2 restart {{ item }}
+    #   args:
+    #     executable: /bin/bash
+    #   with_items: '{{ pm2_service_names }}'
+

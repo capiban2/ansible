@@ -1,0 +1,16 @@
+- hosts: fs_omnitell_ru
+  gather_facts: False
+  become: true
+  become_method: sudo
+  vars:
+    files:
+    - name: 'mrg_ivr_postgres.py'
+      local_dir: '/home/iv/Documents/mydir/work/freeswitch'
+      remote_dir: '/usr/share/freeswitch/scripts'
+      remote_name: 'mrg_ivr_postgres.py'
+
+  tasks:
+  - name: "Restore files"
+    shell: >
+      mv "{{ item.remote_dir }}/{{ item.remote_name }}.bak" "{{ item.remote_dir }}/{{ item.remote_name }}"
+    loop: "{{ files }}"

@@ -1,0 +1,149 @@
+---
+- name: Freeswitch-Autocalling-Frontend
+  hosts: fs_omnitell_ru
+  vars:
+    service_port: {
+      prod: 3010,
+      dev: 3011
+    }
+    pm2_service_names: {
+      prod: 'Autocalling-Frontend',
+      dev: 'Autocalling-Frontend-dev'
+    }
+    local_repo: '/home/iv/Documents/mydir/work/freeswitch'
+    local_path: '/home/iv/Documents/mydir/vuejs/autocalling-frontend'
+    dest_path: {
+      prod: '/opt/autocalling-frontend/prod',
+      dev: '/opt/autocalling-frontend/dev'
+    }
+  become: true
+  tasks:
+    # - name: Mark copyable files
+    #   find:
+    #     paths: "{{ local_path }}"
+    #     hidden: true
+    #     recurse: true
+    #     excludes: "node_modules,dist"
+    #   delegate_to: localhost
+    #   register: copyable_files
+    #   remote_user: root
+
+
+    - name: Canary copy
+      # ansible.builtin.debug:
+      #   msg: "{{ item.path }}"
+      #
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: iv
+        group: iv
+      with_items:
+# "{{ copyable_files.files }}"
+      - {
+          src: "{{ vars.local_path }}/package.json",
+          dest: "{{ dest_path.dev }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/public",
+          dest: "{{ dest_path.dev }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/src",
+          dest: "{{ dest_path.dev }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/ecosystem.dev.config.js",
+          dest: "{{ dest_path.dev }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/vue.config.js",
+          dest: "{{ dest_path.dev }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/babel.config.js",
+          dest: "{{ dest_path.dev }}"
+        }
+
+    # - name: Turn on proper node vers
+    #   shell: |
+    #     source ~/.bashrc
+    #     nvm use 21
+    #   args:
+    #     executable: /bin/bash
+    #   register: response
+    # - name: Print response
+    #   ansible.builtin.debug:
+    #      # var: (sms_handler_liveprobe.stdout |from_json).health
+    #      msg: "{{ response }}"
+
+    - name: Refresh packages for dev
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        npm install
+        npm install serve
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path.dev }}"
+
+    # - name: Whoami
+    #   shell: |
+    #     source ~/.bashrc
+    #     nvm use 21
+    #     node -v 
+    #   args:
+    #     executable: /bin/bash
+    #     chdir: "{{ dest_path.dev }}"
+    #   register: debug_whoami
+    # - name: Print response
+    #   ansible.builtin.debug:
+    #      # var: (sms_handler_liveprobe.stdout |from_json).health
+    #      msg: "{{ debug_whoami }}"
+
+
+    - name: Build prj
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        export AUTOCALLING_STAGE="dev"
+        npm run build
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path.dev }}"
+    #
+    #  - name: Start-test
+    #   shell: serve -s build -l {{ service_port.dev }}
+    #   args:
+    #     executable: /bin/bash
+    #     chdir: "{{ dest_path.dev }}"
+    - name: Check daemon existance
+      shell: pm2 info {{ pm2_service_names.dev }} | grep w | wc -w
+      register: daemon_existence
+
+    # - name: Print response
+    #   ansible.builtin.debug:
+    #     # var: (sms_handler_liveprobe.stdout |from_json).health
+    #     msg: "{{ daemon_existence }}"
+    #   when: daemon_existence.stderr == ''
+   
+
+    - name: Create pm2 daemon
+      shell: pm2 start ecosystem.dev.config.js
+      args:
+        executable: /bin/bash
+        chdir: "{{ dest_path.dev }}"
+      when: daemon_existence.stderr != ''
+
+    - name: Restart pm2 daemon
+      shell: pm2 restart {{ pm2_service_names.dev }}
+      when: daemon_existence.stderr == ''
+
+      
+
+
+
+
+
+
+

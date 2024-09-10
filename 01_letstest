@@ -1,0 +1,1 @@
+ansible-playbook -i /home/ans/ansible/inventory/omnitell.yml ./ansible/test_env_update.yml -l pod0.pallet1

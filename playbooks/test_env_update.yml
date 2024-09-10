@@ -1,0 +1,63 @@
+- hosts: all
+  gather_facts: False
+  become: yes
+  become_method: sudo
+  vars:
+    local_repo: /home/ans/work/otrs-own
+  tasks:
+  - name: Create folders
+    ansible.builtin.file:
+      state: directory
+      path: "{{ item  }}"
+      owner: apache
+      group: apache
+      mode: "0755"
+    loop:
+    - /opt/otrs/Kernel/Config/Files/XML
+    - /opt/otrs/Custom/GAmodules
+    - /opt/otrs/Custom/Kernel/GenericInterface/Invoker/Notion
+
+  - name: "Copy files to destination with apache restart"
+    copy:
+      src: "{{ local_repo }}{{ item.dest }}/{{ item.name }}"
+      dest: "{{ item.dest }}/{{ item.remotename }}"
+      owner: otrs
+      group: apache
+      mode: '0644'
+    loop:
+    - { name: 'NotionCommon.pm', remotename: 'NotionCommon.pm', dest: '/opt/otrs/Custom/GAmodules' }
+    - { name: 'NotionPageComment.pm', remotename: 'NotionPageComment.pm', dest: '/opt/otrs/Custom/GAmodules' }
+    - { name: 'NotionPageCreate.pm', remotename: 'NotionPageCreate.pm', dest: '/opt/otrs/Custom/GAmodules' }
+    - { name: 'NotionPageUpdate.pm', remotename: 'NotionPageUpdate.pm', dest: '/opt/otrs/Custom/GAmodules' }
+    #- { name: 'LinkAdd.pm', remotename: 'LinkAdd.pm', dest: '/opt/otrs/Custom/Kernel/GenericInterface/Operation/LinkObject' }
+    #- { name: 'autoassign.pm', remotename: 'autoassign.pm', dest: '/opt/otrs/Custom/GAmodules' }
+    #- { name: 'setLinks.pm', remotename: 'setLinks.pm', dest: '/opt/otrs/Custom/GAmodules' }
+    - { name: 'setSLA.pm', remotename: 'setSLA.pm', dest: '/opt/otrs/Custom/GAmodules' }
+    - { name: 'getScore.pm', remotename: 'getScore.pm', dest: '/opt/otrs/Custom/GAmodules' }
+    #- { name: 'AgentITSMConfigItemSearch.tt', remotename: 'AgentITSMConfigItemSearch.tt', dest: '/opt/otrs/Custom/Kernel/Output/HTML/Templates/Standard'}
+    ignore_errors: true
+    # notify:
+    # - apache restart
+    # - otrs cache delete
+
+  - name: "Copy files to destination without apache restart"
+    copy:
+      src: "{{ local_repo }}{{ item.dest }}/{{ item.name }}"
+      dest: "{{ item.dest }}/{{ item.remotename }}"
+      owner: otrs
+      group: apache
+      mode: '0644'
+    loop:
+#    - { name: 'GenericInterface_Invoker_Notion.xml', remotename: 'GenericInterface_Invoker_Notion.xml', dest: '/opt/otrs/Custom/Kernel/Config/Files/XML' }
+    - { name: 'ru_Custom.pm', remotename: 'ru_Custom.pm', dest: '/opt/otrs/Kernel/Language' }
+    - { name: 'Otrs2Notion.pm', remotename: 'Otrs2Notion.pm', dest: '/opt/otrs/Custom/Kernel/GenericInterface/Invoker/Notion' }
+ 
+  handlers:
+  - name: apache restart
+    service:
+      name: httpd
+      state: restarted
+
+  - name: otrs cache delete
+    shell: >
+      /bin/su -c "/opt/otrs/bin/otrs.Console.pl Maint::Cache::Delete" -s /bin/bash otrs
