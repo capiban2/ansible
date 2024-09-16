@@ -1,0 +1,57 @@
+---
+- name: Blank
+  hosts: fs_omnitell_ru
+  vars:
+    local_path: '/home/iv/Documents/mydir/work/freeswitch/opt/novofon'
+    remote_path: '/opt/novofon'
+
+  become: true
+  tasks:
+
+    - name: Copy package.json
+      ansible.builtin.copy:
+        owner: iv
+        group: iv
+        src: "{{ local_path }}/package.json"
+        dest: "{{ remote_path }}"
+      notify:
+        - Update deps
+
+    - name: Copy main file and configs
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ remote_path }}"
+        owner: iv
+        group: iv
+      with_items:
+        - "{{ local_path }}/config.yml"
+        - "{{ local_path }}/index.js"
+        - "{{ local_path }}/ecosystem.config.js"
+      notify:
+        - Restart pm2 daemon
+
+
+
+
+  handlers:
+    - name: Update deps
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        npm install
+      args:
+        executable: /bin/bash
+        chdir: "{{ remote_path }}"
+
+    - name: Restart pm2 daemon
+      shell: pm2 start ecosystem.config.js
+      args:
+        executable: /bin/bash
+        chdir: "{{ remote_path }}"
+
+
+
+
+
+
+
