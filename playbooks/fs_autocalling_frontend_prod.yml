@@ -11,10 +11,11 @@
       dev: 'Autocalling-Frontend-dev'
     }
     local_repo: '/home/iv/Documents/mydir/work/freeswitch'
-    local_path: '/home/iv/Documents/mydir/vuejs/autocalling-frontend'
+    local_path: '/home/iv/Documents/mydir/vuejs/autocalling-frontend-prod'
     dest_path: {
       prod: '/opt/autocalling-frontend/prod',
-      dev: '/opt/autocalling-frontend/dev'
+      dev: '/opt/autocalling-frontend/dev',
+      static_storage: '/var/www/html'
     }
   become: true
   tasks:
@@ -38,10 +39,10 @@
           src: "{{ vars.local_path }}/src",
           dest: "{{ dest_path.prod }}"
         }
-      - {
-          src: "{{ vars.local_path }}/ecosystem.prod.config.js",
-          dest: "{{ dest_path.prod }}"
-        }
+      # - {
+      #     src: "{{ vars.local_path }}/ecosystem.prod.config.js",
+      #     dest: "{{ dest_path.prod }}"
+      #   }
       - {
           src: "{{ vars.local_path }}/vue.config.js",
           dest: "{{ dest_path.prod }}"
@@ -49,6 +50,18 @@
       - {
           src: "{{ vars.local_path }}/babel.config.js",
           dest: "{{ dest_path.prod }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/env-for-prod",
+          dest: "{{ dest_path.prod }}/.env.production"
+        }
+      - {
+          src: "{{ vars.local_path }}/key.pem",
+          dest: "{{ dest_path.prod }}/"
+        }
+      - {
+          src: "{{ vars.local_path }}/cert.pem",
+          dest: "{{ dest_path.prod }}/"
         }
 
     - name: Refresh packages for prod
@@ -65,32 +78,14 @@
       shell: |
         source ~/.bashrc
         nvm use 21
-        export AUTOCALLING_STAGE="prod"
+        export BUILDING_FOR="prod"
         npm run build
       args:
         executable: /bin/bash
         chdir: "{{ dest_path.prod }}"
- 
-    - name: Check daemon existance
-      shell: pm2 info {{ pm2_service_names.prod }} | grep w | wc -w
-      register: daemon_existence
 
-
-    - name: Create pm2 daemon
-      shell: pm2 start ecosystem.prod.config.js
-      args:
-        executable: /bin/bash
-        chdir: "{{ dest_path.prod }}"
-      when: daemon_existence.stderr != ''
-
-    - name: Restart pm2 daemon
-      shell: pm2 restart {{ pm2_service_names.prod }}
-      when: daemon_existence.stderr == ''
-
-
-
-
-
-
-
-
+    - name: Copy static files to standard storage
+      ansible.builtin.copy:
+        remote_src: true
+        src: '{{ dest_path.prod }}/dist/'
+        dest: '{{ dest_path.static_storage }}/autocalling'

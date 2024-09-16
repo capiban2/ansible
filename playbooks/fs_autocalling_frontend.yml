@@ -12,32 +12,18 @@
     dest_path: {
       prod: '/opt/autocalling-frontend/prod',
       dev: '/opt/autocalling-frontend/dev',
-      backend_mockery: '/opt/mocks/for-acall-front'
+      backend_mockery: '/opt/mocks/for-acall-front',
+      static_storage: '/var/www/html'
     }
   become: true
   tasks:
-    # - name: Mark copyable files
-    #   find:
-    #     paths: "{{ local_path }}"
-    #     hidden: true
-    #     recurse: true
-    #     excludes: "node_modules,dist"
-    #   delegate_to: localhost
-    #   register: copyable_files
-    #   remote_user: root
-
-
     - name: Canary copy
-      # ansible.builtin.debug:
-      #   msg: "{{ item.path }}"
-      #
       copy:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
         owner: iv
         group: iv
       with_items:
-# "{{ copyable_files.files }}"
       - {
           src: "{{ vars.local_path }}/package.json",
           dest: "{{ dest_path.dev }}"
@@ -62,29 +48,28 @@
           src: "{{ vars.local_path }}/babel.config.js",
           dest: "{{ dest_path.dev }}"
         }
+      - {
+          src: "{{ vars.local_path }}/env-for-dev",
+          dest: "{{ dest_path.dev }}/.env.production"
+        }
+      - {
+          src: "{{ vars.local_path }}/key.pem",
+          dest: "{{ dest_path.dev }}/"
+        }
+      - {
+          src: "{{ vars.local_path }}/cert.pem",
+          dest: "{{ dest_path.dev }}/"
+        }
 
     - name: Sync backend mock
-      copy: "{{ item }}"
-      dest: "{{ dest_path.backend_mockery }}"
+      copy: 
+        src: "{{ item }}"
+        dest: "{{ dest_path.backend_mockery }}"
       with_items:
       - "{{ local_path_backend_mockery }}/index.js"
       - "{{ local_path_backend_mockery }}/package.json"
       - "{{ local_path_backend_mockery }}/tsconfig.json"
       - "{{ local_path_backend_mockery }}/ecosystem.config.js"
-
-
-
-    # - name: Turn on proper node vers
-    #   shell: |
-    #     source ~/.bashrc
-    #     nvm use 21
-    #   args:
-    #     executable: /bin/bash
-    #   register: response
-    # - name: Print response
-    #   ansible.builtin.debug:
-    #      # var: (sms_handler_liveprobe.stdout |from_json).health
-    #      msg: "{{ response }}"
 
     - name: Refresh packages for dev
       shell: |
@@ -104,63 +89,22 @@
       args:
         executable: /bin/bash
         chdir: "{{ dest_path.backend_mockery }}"
-    # - name: Whoami
-    #   shell: |
-    #     source ~/.bashrc
-    #     nvm use 21
-    #     node -v 
-    #   args:
-    #     executable: /bin/bash
-    #     chdir: "{{ dest_path.dev }}"
-    #   register: debug_whoami
-    # - name: Print response
-    #   ansible.builtin.debug:
-    #      # var: (sms_handler_liveprobe.stdout |from_json).health
-    #      msg: "{{ debug_whoami }}"
-
 
     - name: Build prj
       shell: |
         source ~/.bashrc
         nvm use 21
-        export AUTOCALLING_STAGE="dev"
+        export BUILDING_FOR="dev"
         npm run build
       args:
         executable: /bin/bash
         chdir: "{{ dest_path.dev }}"
-    #
-    #  - name: Start-test
-    #   shell: serve -s build -l {{ service_port.dev }}
-    #   args:
-    #     executable: /bin/bash
-    #     chdir: "{{ dest_path.dev }}"
-    - name: Check daemon existance
-      shell: pm2 info {{ pm2_service_names.dev }} | grep w | wc -w
-      register: daemon_existence
 
-    # - name: Print response
-    #   ansible.builtin.debug:
-    #     # var: (sms_handler_liveprobe.stdout |from_json).health
-    #     msg: "{{ daemon_existence }}"
-    #   when: daemon_existence.stderr == ''
-   
-
-    - name: Create pm2 daemon
-      shell: |
-        pm2 start ecosystem.dev.config.js --ns dev
-        pm2 stop "{{ pm2_service_names.dev }}"
-      args:
-        executable: /bin/bash
-        chdir: "{{ dest_path.dev }}"
-      when: daemon_existence.stderr != ''
-
-    # - name: Restart pm2 daemon
-    #   shell: pm2 restart {{ pm2_service_names.dev }}
-    #   when: daemon_existence.stderr == ''
-
-      
-
-
+    - name: Copy static files to standard storage
+      ansible.builtin.copy:
+        remote_src: true
+        src: '{{ dest_path.dev }}/dist/'
+        dest: '{{ dest_path.static_storage }}/autocalling-dev'
 
 
 
