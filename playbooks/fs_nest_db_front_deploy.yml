@@ -1,0 +1,72 @@
+---
+- name: Nest db-frontend service deployment
+  hosts: fs_omnitell_ru
+  vars:
+    local_path: '/home/iv/Documents/mydir/work/freeswitch/opt/mrg-dbaccess-nest'
+    remote_path: '/opt/mrg-dbaccess-nest'
+
+
+  tasks:
+
+    - name: Copy package.json
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ remote_path }}"
+      with_items: 
+        - "{{ local_path }}/package.json"
+        - "{{ local_path }}/package-lock.json"
+      notify:
+        Update deps
+
+    - name: Copy src files
+      ansible.builtin.copy:
+        src: "{{ local_path }}/src"
+        dest: "{{ remote_path }}"
+      notify:
+        - Build prj
+        - Restart pm2 daemon
+
+    - name: Copy test files
+      ansible.builtin.copy:
+        src: "{{ local_path }}/test"
+        dest: "{{ remote_path }}"
+      changed_when: True
+      notify:
+        - Make tests
+
+
+  handlers:
+    - name: Update deps
+      shell: |
+        source ~/.bashrc
+        nvm use 21
+        npm install
+      args:
+        executable: /bin/bash
+        chdir: "{{ remote_path }}"
+
+    - name: Build prj
+      become: true
+      shell: npm run build
+      args:
+        executable: /bin/bash
+        chdir: "{{ remote_path }}"
+
+
+    - name: Restart pm2 daemon
+      become: true
+      shell: pm2 start ecosystem.config.js
+      args:
+        executable: /bin/bash
+        chdir: "{{ remote_path }}"
+
+
+    - name: Make tests
+      shell: echo ""
+
+
+
+
+
+
+
