@@ -89,3 +89,24 @@
         remote_src: true
         src: '{{ dest_path.prod }}/dist/'
         dest: '{{ dest_path.static_storage }}/autocalling'
+      notify: Clean from old buddies
+      
+
+  handlers:
+
+    - name: Clean from old buddies
+      ansible.builtin.find:
+        paths: "{{ dest_path.statis_storage }}/js"
+        age: 15m
+        age_stamp: ctime
+      register: oldFiles
+      notify:
+        - Remover
+
+    - name: Remover
+      ansible.builtin.file:
+        path: "{{ item.path }}" 
+        state: absent
+      with_items: "{{ oldFiles.files }}"
+
+

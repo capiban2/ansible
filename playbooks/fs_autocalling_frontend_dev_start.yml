@@ -12,21 +12,22 @@
     dest_path: {
       prod: '/opt/autocalling-frontend/prod',
       dev: '/opt/autocalling-frontend/dev',
-      backend_mockery: '/opt/mocks/mock-for-acall-front'
+      backend_mockery: '/opt/mocks/for-acall-front'
     }
   become: true
   tasks:
 
-    - name: Start pm2 daemon for frontend
-      shell: |
-        pm2 start ecosystem.dev.config.js --ns dev
-      args:
-        executable: /bin/bash
-        chdir: "{{ dest_path.dev }}"
+    # - name: Start pm2 daemon for frontend
+    #   shell: |
+    #     pm2 start ecosystem.dev.config.js --namespace dev
+    #   args:
+    #     executable: /bin/bash
+    #     chdir: "{{ dest_path.dev }}"
       # when: daemon_existence.stderr != ''
+
     - name: Start pm2 for backend mockery
-      shel: |
-        pm2 start ecosystem.config.js --ns dev
+      shell: |
+        pm2 start ecosystem.config.js --namespace dev
       args:
         executable: /bin/bash
         chdir: "{{ dest_path.backend_mockery }}"

@@ -1,5 +1,5 @@
 ---
-- name: Freeswitch-Autocalling-Frontend-Starter
+- name: Freeswitch-Autocalling-Frontend-Dev-Stoppage
   hosts: fs_omnitell_ru
   vars:
     pm2_service_names: {
@@ -12,7 +12,7 @@
     dest_path: {
       prod: '/opt/autocalling-frontend/prod',
       dev: '/opt/autocalling-frontend/dev',
-      backend_mockery: '/opt/mocks/mock-for-acall-front'
+      backend_mockery: '/opt/mocks/for-acall-front'
     }
   become: true
   tasks:

@@ -1,0 +1,17 @@
+---
+- name: Blank
+  hosts: fs_omnitell_ru
+  vars:
+    blank: null
+
+  become: true
+  tasks:
+
+  handlers:
+
+
+
+
+
+
+
