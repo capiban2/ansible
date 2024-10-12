@@ -1,0 +1,36 @@
+---
+- name: Blank
+  hosts: fs_omnitell_ru
+  vars:
+    out_port: 9091
+    container_name: "promet_pushgw"
+
+  become: true
+  tasks:
+    - name: Pull the image
+      community.docker.docker_image_pull:
+        name: prom/pushgateway
+
+    - name: Create container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: prom/pushgateway
+        state: present
+        ports:
+          - "9091:{{ out_port }}"
+
+    - name: Start container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        state: started
+      
+      
+
+  handlers:
+
+
+
+
+
+
+
