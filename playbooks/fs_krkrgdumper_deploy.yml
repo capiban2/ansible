@@ -1,0 +1,53 @@
+---
+- name: Deploy for krk-rg-out dumper script
+  hosts: fs_omnitell_ru
+  vars:
+    remote_path: '/opt/scripts/ivr-mrg'
+    local_path: '/home/iv/Documents/mydir/repos/freeswitch/opt/scripts/ivr-mrg'
+    pushgw_cont_name: promet_pushgw
+    pushgw_cont_image: prom/pushgateway
+    pushgw_cont_out_port: 9091
+
+  become: true
+  tasks:
+    - name: Copy src files
+      ansible.builtin.copy:
+        src: "{{ vars.local_path }}{{ item }}"
+        dest: "{{ remote_path }}"
+        mode: '0644'
+      with_items:
+      - "krk_rg_out.py"
+      - "config.yaml"
+      - "logconf.py"
+    
+    - name: Sync metrics file
+      ansible.builtin.copy:
+        src: "{{ local_path }}/matrics_krk_out.py"
+        dest: "{{ remote_path }}"
+        mode: "0644"
+      notify: Restart pushgateway
+
+    - name: Sync dev packages
+      ansible.builtin.copy:
+        src: "{{ vars.local_path }}/requirements.txt"
+        dest: "{{ vars.remote_path }}"
+      notify:
+        - Update deps
+
+  handlers:
+    - name: Update deps
+      shell: |
+        venv/bin/pip install -r requirements.txt
+      args:
+        executable: /bin/bash
+        chdir: "{{ remote_path }}"
+
+    - name: Restart pushgateway container
+      community.docker.docker_container:
+        name: "{{ pushgw_cont_name }}"
+        image: "{{ pushgw_cont_image }}"
+        state: started
+        restart: true
+        ports:
+          - "9091:{{ pushgw_cont_out_port }}"
+
