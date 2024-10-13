@@ -12,20 +12,20 @@
   tasks:
     - name: Copy src files
       ansible.builtin.copy:
-        src: "{{ vars.local_path }}{{ item }}"
+        src: "{{ vars.local_path }}/{{ item }}"
         dest: "{{ remote_path }}"
         mode: '0644'
       with_items:
-      - "krk_rg_out.py"
+      - "krk_out_dumper.py"
       - "config.yaml"
       - "logconf.py"
     
     - name: Sync metrics file
       ansible.builtin.copy:
-        src: "{{ local_path }}/matrics_krk_out.py"
+        src: "{{ local_path }}/metrics_krk_out.py"
         dest: "{{ remote_path }}"
         mode: "0644"
-      notify: Restart pushgateway
+      notify: Restart pushgateway container
 
     - name: Sync dev packages
       ansible.builtin.copy:
@@ -45,9 +45,6 @@
     - name: Restart pushgateway container
       community.docker.docker_container:
         name: "{{ pushgw_cont_name }}"
-        image: "{{ pushgw_cont_image }}"
         state: started
         restart: true
-        ports:
-          - "9091:{{ pushgw_cont_out_port }}"
 

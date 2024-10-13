@@ -2,10 +2,10 @@
 - name: Nest db-frontend service deployment
   hosts: fs_omnitell_ru
   vars:
-    local_path: '/home/iv/Documents/mydir/work/freeswitch/opt/mrg-dbaccess-nest'
+    local_path: '/home/iv/Documents/mydir/repos/freeswitch/opt/mrg-dbaccess-nest'
     remote_path: '/opt/mrg-dbaccess-nest'
 
-
+  become: true
   tasks:
 
     - name: Copy package.json
@@ -37,9 +37,8 @@
 
   handlers:
     - name: Update deps
+      become: true
       shell: |
-        source ~/.bashrc
-        nvm use 21
         npm install
       args:
         executable: /bin/bash
