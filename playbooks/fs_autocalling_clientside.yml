@@ -1,0 +1,102 @@
+---
+- name: Freeswitch-Autocalling-Backend
+  hosts: fs_omnitell_ru
+  gather_facts: false
+  vars:
+    pm2_service_names: 'Autocalling-MRG'
+    local_repo: '/home/iv/Documents/mydir/repos/freeswitch'
+    remote_path: '/opt/autocalling-mrg/client-side'
+    remote_main_path: '/opt/autocalling-mrg'
+    local_path: '/home/iv/Documents/mydir/repos/freeswitch/opt/autocalling-mrg/client-side'
+    local_main_path: '/home/iv/Documents/mydir/repos/freeswitch/opt/autocalling-mrg'
+
+  become: true
+  tasks:
+
+
+    - name: Sync requirements.txt
+      ansible.builtin.copy:
+        src: "{{ vars.local_path }}/requirements.txt"
+        dest: "{{ vars.remote_path }}"
+      notify:
+        - Refresh packages
+
+    - name: Sync files
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        # owner: iv
+        # group: iv
+      with_items:
+      - {
+          src: "{{ vars.local_main_path }}/tts-stack_compose.yml",
+          dest: "{{ remote_main_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/originate_calls.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/dump_to_db.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/call_handler4.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/call_handler5.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/constants.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/codebase.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/logger_config.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/check_lines_count.sh",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/docker_interaction.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/docker_configs",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/stack_halter.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/logs_gatherer.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/docker_interaction2.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/deploy_tts_stack.py",
+          dest: "{{ remote_path }}"
+        }
+      - {
+          src: "{{ vars.local_path }}/scale_tts_service.py",
+          dest: "{{ remote_path }}"
+        }
+
+
+  handlers:
+    - name: Refresh packages
+      ansible.builtin.pip:
+        chdir: "{{ remote_path }}"
+        requirements: "./requirements.txt"
+        virtualenv: venv
